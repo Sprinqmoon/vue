@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bag Store</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      :root {
+        --primary: #8b5a2b;
+        --secondary: #d4a76a;
+        --accent: #4a3520;
+        --light: #f5f0e6;
+      }
+      
+      body {
+        background-color: #f9f7f1;
+      }
+      
+      .card {
+        transition: transform 0.2s ease-in-out;
+        border-radius: 12px;
+        overflow: hidden;
+        border: none;
+        background-color: var(--light);
+      }
+      .card:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 20px rgba(139, 90, 43, 0.2);
+      }
+      .card-img-top {
+        height: 220px;
+        object-fit: contain;
+        padding: 1.5rem;
+        background: var(--light);
+      }
+      .card-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: var(--accent);
+      }
+      .card-text {
+        font-size: 0.9rem;
+        height: 60px;
+        overflow: hidden;
+        color: #666;
+      }
+      .btn-primary {
+        width: 100%;
+        background-color: var(--primary);
+        border-color: var(--primary);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+      .btn-primary:hover {
+        background-color: var(--accent);
+        border-color: var(--accent);
+      }
+      .btn-outline-dark {
+        border-color: var(--primary);
+        color: var(--primary);
+      }
+      .btn-outline-dark:hover {
+        background-color: var(--primary);
+        color: white;
+      }
+      .navbar {
+        background: linear-gradient(to right, var(--accent), var(--primary));
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .navbar-brand {
+        font-weight: 800;
+        font-size: 1.5rem;
+        letter-spacing: 1px;
+        color: white !important;
+      }
+      .navbar-nav .nav-link {
+        color: rgba(255,255,255,0.85) !important;
+        font-weight: 500;
+      }
+      .navbar-nav .nav-link:hover {
+        color: white !important;
+      }
+      .dropdown-menu {
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      }
+      .dropdown-item:hover {
+        background-color: var(--secondary);
+      }
+      .row {
+        margin-top: 2rem;
+      }
+      .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .quantity-btn {
+        min-width: 30px;
+      }
+      .no-results {
+        text-align: center;
+        padding: 2rem;
+        font-size: 1.2rem;
+        color: #6c757d;
+      }
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(249, 247, 241, 0.9);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+      }
+      .spinner {
+        width: 3rem;
+        height: 3rem;
+        color: var(--primary);
+      }
+      .error-message {
+        color: #dc3545;
+        text-align: center;
+        padding: 1rem;
+      }
+      .badge-secondary {
+        background-color: var(--secondary);
+        color: var(--accent);
+      }
+      .modal-header.bg-dark {
+        background: linear-gradient(to right, var(--accent), var(--primary)) !important;
+      }
+      footer {
+        background: linear-gradient(to right, var(--accent), var(--primary));
+        color: white;
+        border-top: 1px solid rgba(0,0,0,0.1);
+      }
+      footer a {
+        color: var(--light) !important;
+      }
+      footer h5 {
+        color: var(--light);
+        font-weight: 700;
+        border-bottom: 2px solid var(--secondary);
+        padding-bottom: 0.5rem;
+        display: inline-block;
+      }
+      .btn-outline-info {
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+      .btn-outline-info:hover {
+        background-color: var(--primary);
+        color: white;
+      }
+      @media (max-width: 576px) {
+        .quantity-controls {
+          flex-direction: column;
+          align-items: flex-end;
+        }
+        .quantity-controls > * {
+          margin-bottom: 5px;
+        }
+        .navbar-brand {
+          font-size: 1.3rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app">
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" v-if="loading">
+        <div class="spinner-border spinner" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+
+      <div class="container">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+          <a class="navbar-brand" href="#">
+            <i class="fas fa-bag-shopping me-2"></i>LUXE BAGS
+          </a>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-toggle="collapse"
+            data-target="#navbarNavDropdown"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="#">Home</a>
+              </li>
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="categoriesDropdown"
+                  role="button"
+                  data-toggle="dropdown"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  Categories
+                </a>
+                <div class="dropdown-menu" aria-labelledby="categoriesDropdown">
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    v-for="(item, index) in category_list"
+                    @click="filterCategory(item)"
+                  >
+                    {{ item }}
+                  </a>
+                </div>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">New Arrivals</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="#">Collections</a>
+              </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0 mr-3">
+              <div class="input-group">
+                <input
+                  v-model="search"
+                  @input="debounceSearch()"
+                  class="form-control"
+                  type="search"
+                  placeholder="Search bags..."
+                  aria-label="Search"
+                />
+                <div class="input-group-append">
+                  <button class="btn btn-outline-light" type="button">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+            <a
+              href="#"
+              class="btn btn-outline-light"
+              @click.prevent="openCartModal"
+              aria-label="Shopping cart"
+            >
+              <i class="fas fa-shopping-cart"></i> Cart
+              <span class="badge badge-pill badge-light ml-1"
+                >{{ totalItems }}</span
+              >
+            </a>
+          </div>
+        </nav>
+
+        <!-- Hero Banner -->
+        <div class="jumbotron bg-light rounded-lg mt-4 text-center py-5" style="background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1605733513597-a8f8341084e6?ixlib=rb-4.0.3') center/cover;">
+          <div class="container py-5">
+            <h1 class="display-4 text-white font-weight-bold">LUXURY BAG COLLECTION</h1>
+            <p class="lead text-white">Handcrafted elegance for every occasion</p>
+            <button class="btn btn-lg btn-primary px-4">SHOP NOW</button>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" v-if="error">
+          {{ error }}
+          <button
+            @click="fetchDataAPI()"
+            class="btn btn-sm btn-outline-primary"
+          >
+            Try Again
+          </button>
+        </div>
+
+        <!-- Category Buttons -->
+        <div class="d-flex flex-wrap justify-content-center my-4">
+          <button
+            type="button"
+            class="btn btn-outline-info m-1"
+            @click="resetFilters()"
+          >
+            All Bags
+          </button>
+          <button
+            v-for="(item, index) in category_list"
+            type="button"
+            class="btn btn-outline-info m-1"
+            @click="filterCategory(item)"
+          >
+            {{ item }}
+          </button>
+        </div>
+
+        <!-- Product Cards -->
+        <div class="row">
+          <div
+            class="col-lg-3 col-md-4 col-sm-6 mb-4"
+            v-for="(item, index) in products_list"
+            :key="item.id"
+          >
+            <div class="card shadow-sm h-100">
+              <img
+                :src="item.thumbnail"
+                class="card-img-top"
+                :alt="item.title"
+                @error="handleImageError(item)"
+              />
+              <div class="card-body d-flex flex-column">
+                <h5 class="card-title">{{ item.title }}</h5>
+                <span class="badge badge-secondary mb-2"
+                  >{{ item.category }}</span
+                >
+                <p class="card-text">{{ item.description }}</p>
+                <div class="d-flex justify-content-between align-items-center mt-auto">
+                  <p class="text-primary font-weight-bold mb-0">
+                    ${{ item.price.toFixed(2) }}
+                  </p>
+                  <p class="text-muted mb-0">
+                    <i class="fas fa-star text-warning"></i> {{ item.rating }}
+                  </p>
+                </div>
+                <button
+                  class="btn btn-primary mt-3"
+                  @click="addToCart(item)"
+                  :disabled="item.stock <= 0"
+                >
+                  {{ item.stock <= 0 ? 'Out of Stock' : 'Add To Cart' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Results Message -->
+        <div
+          class="no-results"
+          v-if="products_list.length === 0 && !loading && !error"
+        >
+          <i class="fas fa-search fa-2x mb-3"></i>
+          <h4>No bags found</h4>
+          <p>Try adjusting your search or filters</p>
+          <button class="btn btn-primary" @click="resetFilters()">
+            Show All Bags
+          </button>
+        </div>
+      </div>
+
+      <!-- Add to Cart Modal -->
+      <div
+        class="modal fade"
+        id="cartModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="cartModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="cartModalLabel">Added to Cart</h5>
+              <button
+                type="button"
+                class="close text-white"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div v-if="last_added_product" class="d-flex align-items-center">
+                <img
+                  :src="last_added_product.thumbnail"
+                  :alt="last_added_product.title"
+                  style="
+                    width: 100px;
+                    height: 100px;
+                    object-fit: contain;
+                    margin-right: 15px;
+                  "
+                  @error="handleImageError(last_added_product)"
+                />
+                <div>
+                  <strong>{{ last_added_product.title }}</strong> has been added
+                  to your cart.
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                Continue Shopping
+              </button>
+              <button class="btn btn-primary" @click="openCartModal">
+                Go to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cart View Modal -->
+      <div
+        class="modal fade"
+        id="viewCartModal"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="viewCartModalLabel"
+        aria-hidden="true"
+      >
+        <div
+          class="modal-dialog modal-lg modal-dialog-scrollable"
+          role="document"
+        >
+          <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+              <h5 class="modal-title">Your Cart ({{ totalItems }} items)</h5>
+              <button
+                type="button"
+                class="close text-white"
+                data-dismiss="modal"
+                aria-label="Close"
+              >
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div v-if="cart.length === 0" class="text-center py-4">
+                <p>Your cart is empty.</p>
+                <button class="btn btn-primary" data-dismiss="modal">
+                  Browse Bags
+                </button>
+              </div>
+              <ul class="list-group" v-else>
+                <li
+                  class="list-group-item d-flex justify-content-between align-items-center"
+                  v-for="item in cart"
+                  :key="item.id"
+                >
+                  <div class="d-flex align-items-center">
+                    <img
+                      :src="item.thumbnail"
+                      :alt="item.title"
+                      style="
+                        width: 70px;
+                        height: 70px;
+                        object-fit: contain;
+                        margin-right: 15px;
+                        background: #f5f0e6;
+                        padding: 5px;
+                        border-radius: 8px;
+                      "
+                      @error="handleImageError(item)"
+                    />
+                    <div>
+                      <strong>{{ item.title }}</strong><br />
+                      <small class="text-muted"
+                        >${{ item.price.toFixed(2) }} USD</small
+                      >
+                    </div>
+                  </div>
+                  <div class="quantity-controls">
+                    <button
+                      class="btn btn-sm btn-outline-secondary quantity-btn"
+                      @click="updateQuantity(item.id, item.quantity - 1)"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span class="px-2">{{ item.quantity }}</span>
+                    <button
+                      class="btn btn-sm btn-outline-secondary quantity-btn"
+                      @click="updateQuantity(item.id, item.quantity + 1)"
+                      :disabled="item.quantity >= getProductStock(item.id)"
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                    <button
+                      class="btn btn-sm btn-danger ml-2"
+                      @click="removeFromCart(item.id)"
+                      aria-label="Remove item"
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+              <div v-if="cart.length > 0" class="mt-4 p-3 bg-light rounded">
+                <div class="d-flex justify-content-between">
+                  <h5 class="mb-0">Subtotal:</h5>
+                  <h5 class="mb-0">${{ totalPrice }}</h5>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                  <span>Shipping:</span>
+                  <span>Free</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between font-weight-bold">
+                  <h4>Total:</h4>
+                  <h4>${{ totalPrice }}</h4>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-dismiss="modal">
+                Continue Shopping
+              </button>
+              <button
+                class="btn btn-primary"
+                :disabled="cart.length === 0"
+                @click="checkout"
+              >
+                Proceed to Checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Footer -->
+    <footer class="text-center text-lg-start">
+      <div class="container text-center text-md-left pt-4 pb-2">
+        <div class="row">
+          <!-- About -->
+          <div class="col-md-4 mb-4">
+            <h5 class="text-uppercase font-weight-bold">
+              <i class="fas fa-bag-shopping me-2"></i>LUXE BAGS
+            </h5>
+            <p>
+              We offer premium quality bags crafted with attention to detail and timeless design. 
+              Explore our collections to find the perfect companion for every occasion.
+            </p>
+            <div class="social-icons mt-3">
+              <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
+              <a href="#" class="text-white me-3"><i class="fab fa-instagram"></i></a>
+              <a href="#" class="text-white me-3"><i class="fab fa-pinterest"></i></a>
+              <a href="#" class="text-white"><i class="fab fa-twitter"></i></a>
+            </div>
+          </div>
+
+          <!-- Links -->
+          <div class="col-md-4 mb-4">
+            <h5 class="text-uppercase font-weight-bold">Quick Links</h5>
+            <ul class="list-unstyled">
+              <li><a href="#" class="text-white">New Arrivals</a></li>
+              <li><a href="#" class="text-white">Best Sellers</a></li>
+              <li><a href="#" class="text-white">Collections</a></li>
+              <li><a href="#" class="text-white">Gift Cards</a></li>
+              <li><a href="#" class="text-white">Care Guide</a></li>
+            </ul>
+          </div>
+
+          <!-- Contact -->
+          <div class="col-md-4 mb-4">
+            <h5 class="text-uppercase font-weight-bold">Contact Us</h5>
+            <ul class="list-unstyled">
+              <li>
+                <i class="fas fa-map-marker-alt me-2"></i> 123 Fashion Street, New York
+              </li>
+              <li><i class="fas fa-phone me-2"></i> +1 (555) 123-4567</li>
+              <li>
+                <i class="fas fa-envelope me-2"></i> info@luxebags.com
+              </li>
+              <li class="mt-3">
+                <i class="fas fa-clock me-2"></i> Mon-Fri: 9AM-6PM
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="text-center p-3"
+        style="background-color: rgba(0, 0, 0, 0.2)"
+      >
+        © 2025 LUXE BAGS. All rights reserved.
+      </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+      let { createApp } = Vue;
+
+      function debounce(func, wait) {
+        let timeout;
+        return function () {
+          let context = this,
+            args = arguments;
+          clearTimeout(timeout);
+          timeout = setTimeout(() => {
+            func.apply(context, args);
+          }, wait);
+        };
+      }
+
+      createApp({
+        data() {
+          return {
+            products_list: [],
+            org_products_list: [],
+            category_list: [],
+            search: "",
+            cart: [],
+            last_added_product: null,
+            loading: true,
+            error: null,
+            searchTimeout: null,
+            placeholderImage: "https://via.placeholder.com/300x300?text=Bag+Image",
+          };
+        },
+        computed: {
+          totalItems() {
+            return this.cart.reduce((sum, item) => sum + item.quantity, 0);
+          },
+          totalPrice() {
+            return this.cart
+              .reduce((sum, item) => sum + item.price * item.quantity, 0)
+              .toFixed(2);
+          },
+        },
+        created() {
+          this.loadCartFromLocalStorage();
+          this.fetchDataAPI();
+        },
+        methods: {
+          async fetchDataAPI() {
+            this.loading = true;
+            this.error = null;
+            try {
+              // Using a bags-specific API
+              let response = await axios.get("https://dummyjson.com/products/category/womens-bags");
+              
+              // If the specific category doesn't have enough products, supplement with others
+              if (response.data.products.length < 10) {
+                const supplement = await axios.get("https://dummyjson.com/products/category/mens-bags");
+                response.data.products = [...response.data.products, ...supplement.data.products];
+              }
+              
+              if (response.data.products.length > 0) {
+                this.org_products_list = response.data.products.map(
+                  (product) => ({
+                    ...product,
+                    stock: Math.floor(Math.random() * 20) + 5,
+                    // Replace images with bag-specific ones
+                    thumbnail: product.thumbnail.replace(/_(\d+).jpg/, "_$1.jpg") || this.placeholderImage
+                  })
+                );
+                
+                this.products_list = [...this.org_products_list];
+
+                // Custom bag categories
+                this.category_list = [
+                  "Handbags", 
+                  "Totes", 
+                  "Backpacks", 
+                  "Clutches", 
+                  "Crossbody",
+                  "Shoulder Bags"
+                ];
+              }
+            } catch (error) {
+              console.error("Error fetching products:", error);
+              this.error = "Failed to load products. Please try again later.";
+            } finally {
+              this.loading = false;
+            }
+          },
+          filterCategory(category) {
+            // Simulate filtering for our custom categories
+            this.products_list = this.org_products_list.filter(
+              item => item.title.toLowerCase().includes(category.toLowerCase()) ||
+                      item.description.toLowerCase().includes(category.toLowerCase())
+            );
+          },
+          resetFilters() {
+            this.products_list = [...this.org_products_list];
+            this.search = "";
+          },
+          debounceSearch: debounce(function () {
+            this.liveSearch();
+          }, 300),
+          liveSearch() {
+            let input = this.search.trim().toLowerCase();
+            this.products_list = this.org_products_list.filter(
+              (item) =>
+                item.title.toLowerCase().includes(input) ||
+                item.description.toLowerCase().includes(input) ||
+                item.category.toLowerCase().includes(input)
+            );
+          },
+          addToCart(product) {
+            if (product.stock <= 0) return;
+
+            this.last_added_product = product;
+            let existingItem = this.cart.find((item) => item.id === product.id);
+
+            if (existingItem) {
+              if (existingItem.quantity >= product.stock) {
+                alert(`Only ${product.stock} items available in stock`);
+                return;
+              }
+              existingItem.quantity += 1;
+            } else {
+              this.cart.push({
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                thumbnail: product.thumbnail,
+                quantity: 1,
+              });
+            }
+            this.saveCartToLocalStorage();
+
+            $("#cartModal").modal("show");
+
+            setTimeout(() => {
+              $("#cartModal").modal("hide");
+            }, 3000);
+          },
+          getProductStock(id) {
+            let product = this.org_products_list.find((p) => p.id === id);
+            return product ? product.stock : 0;
+          },
+          removeFromCart(id) {
+            this.cart = this.cart.filter((item) => item.id !== id);
+            this.saveCartToLocalStorage();
+          },
+          updateQuantity(id, newQuantity) {
+            if (newQuantity < 1) {
+              this.removeFromCart(id);
+              return;
+            }
+
+            let product = this.org_products_list.find((p) => p.id === id);
+            if (product && newQuantity > product.stock) {
+              alert(`Only ${product.stock} items available in stock`);
+              return;
+            }
+
+            let item = this.cart.find((item) => item.id === id);
+            if (item) {
+              item.quantity = newQuantity;
+              this.saveCartToLocalStorage();
+            }
+          },
+          saveCartToLocalStorage() {
+            try {
+              localStorage.setItem("my_cart", JSON.stringify(this.cart));
+            } catch (e) {
+              console.error("Failed to save cart to localStorage", e);
+              if (e.name === "QuotaExceededError") {
+                alert(
+                  "Your cart is too big to save. Some items may not persist between sessions."
+                );
+              }
+            }
+          },
+          loadCartFromLocalStorage() {
+            try {
+              let savedCart = localStorage.getItem("my_cart");
+              if (savedCart) {
+                this.cart = JSON.parse(savedCart);
+              }
+            } catch (e) {
+              console.error("Failed to load cart from localStorage", e);
+            }
+          },
+          openCartModal() {
+            $("#cartModal").modal("hide");
+            $("#viewCartModal").modal("show");
+          },
+          checkout() {
+            Swal.fire({
+              title: "Confirm Checkout",
+              text: `Are you sure you want to checkout with ${this.totalItems} items for $${this.totalPrice}?`,
+              icon: "question",
+              showCancelButton: true,
+              confirmButtonColor: "#8b5a2b",
+              cancelButtonColor: "#6c757d",
+              confirmButtonText: "Yes, checkout!",
+            }).then((result) => {
+              if (result.isConfirmed) {
+                this.cart = [];
+                localStorage.removeItem("my_cart");
+
+                Swal.fire(
+                  "Order Placed!",
+                  "Your order has been successfully placed.",
+                  "success"
+                ).then(() => {
+                  $("#viewCartModal").modal("hide");
+                });
+              }
+            });
+          },
+          handleImageError(product) {
+            product.thumbnail = this.placeholderImage;
+          },
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
